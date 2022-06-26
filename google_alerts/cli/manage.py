@@ -118,6 +118,7 @@ def main():
         config['password'] = obfuscate(str(config['password']), 'fetch')
         ga = GoogleAlerts(config['email'], config['password'])
         chrome_options = webdriver.ChromeOptions()
+        chrome_options.headless = True
         chrome_options.add_experimental_option("excludeSwitches", ['enable-automation'])
         caps = webdriver.DesiredCapabilities.CHROME.copy()
         caps['acceptInsecureCerts'] = True
