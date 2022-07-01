@@ -10,6 +10,8 @@ import time
 from argparse import ArgumentParser
 
 import selenium.webdriver as webdriver
+from selenium.common.exceptions import NoSuchElementException
+#from selenium.webdriver.common.desired_capabilities import DesiredCapabilities
 
 from google_alerts import GoogleAlerts
 
@@ -78,6 +80,8 @@ def main():
                               help='Location of the Chrome driver. This can be downloaded by visiting http://chromedriver.chromium.org/downloads',)
     setup_parser.add_argument('-t', '--timeout', dest='timeout',
                               required=False, type=int, default=20)
+    setup_parser.add_argument('-r', '--remote', dest='remote',
+                              required=False, type=bool, default=False)
     setup_parser = subs.add_parser('list')
     setup_parser = subs.add_parser('create')
     setup_parser.add_argument('-t', '--term', dest='term', required=True,
@@ -122,18 +126,40 @@ def main():
         chrome_options.add_argument('--headless')
         chrome_options.add_argument('--disable-gpu')
         chrome_options.add_argument('--disable-dev-shm-usage')
+        chrome_options.add_argument('--verbose')
         chrome_options.add_experimental_option("excludeSwitches", ['enable-automation'])
         caps = webdriver.DesiredCapabilities.CHROME.copy()
         caps['acceptInsecureCerts'] = True
-        with contextlib.closing(webdriver.Chrome(args.driver, options=chrome_options)) as driver:
+
+        driver_type = "Remote" if args.remote else "Chrome"
+        with contextlib.closing(getattr(webdriver,driver_type)(command_executor=args.driver, 
+#                                                desired_capabilities=chrome_options.to_capabilities(), 
+                                                options=chrome_options)) as driver: 
+#        with contextlib.closing(webdriver.Chrome(args.driver, options=chrome_options)) as driver:
             driver.get('https://stackoverflow.com/users/signup?ssrc=head&returnurl=%2fusers%2fstory%2fcurrent%27')
             time.sleep(3)
             driver.find_element_by_xpath('//*[@id="openid-buttons"]/button[1]').click()
             driver.find_element_by_xpath('//input[@type="email"]').send_keys(config['email'])
-            driver.find_element_by_xpath('//*[@id="identifierNext"]').click()
+            try:
+                driver.find_element_by_xpath('//*[@id="identifierNext"]').click()
+            except  NoSuchElementException:
+                driver.find_element_by_xpath('//*[@id="next"]').click()
+            except Exception as e:
+                with open('out/error_page{}.html'.format(time.time()), 'w') as f:
+                    f.write(driver.page_source)
+                raise e
+
             time.sleep(3)
             driver.find_element_by_xpath('//input[@type="password"]').send_keys(config['password'])
-            driver.find_element_by_xpath('//*[@id="passwordNext"]').click()
+            try:
+                driver.find_element_by_xpath('//*[@id="passwordNext"]').click()
+            except  NoSuchElementException:
+                driver.find_element_by_xpath('//*[@id="submit"]').click() #selenium.common.exceptions.NoSuchElementException
+            except Exception as e:
+                with open('out/error_page{}.html'.format(time.time()), 'w') as f:
+                    f.write(driver.page_source)
+                raise e
+
             time.sleep(3)
             driver.get('https://www.google.com/alerts')
             print("[*] Filled in password and submitted.")
