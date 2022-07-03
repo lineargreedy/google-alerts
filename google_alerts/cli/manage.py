@@ -81,7 +81,7 @@ def main():
     setup_parser.add_argument('-t', '--timeout', dest='timeout',
                               required=False, type=int, default=20)
     setup_parser.add_argument('-r', '--remote', dest='remote',
-                              required=False, type=bool, default=False)
+                              required=False, default=False, action='store_true')
     setup_parser = subs.add_parser('list')
     setup_parser = subs.add_parser('create')
     setup_parser.add_argument('-t', '--term', dest='term', required=True,
